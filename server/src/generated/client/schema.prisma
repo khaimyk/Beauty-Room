@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String               @id @default(uuid())
+  email              String               @unique
+  password           String
+  name               String
+  image              String?
+  description        String?
+  phoneNumber        String?
+  role               String               @default("CLIENT")
+  chatId             String?              @unique
+  nickName           String?
+  services           Service[]
+  bookings           Booking[]
+  serviceMasters     ServiceMaster[]
+  reviews            Review[]
+  categories         Category[]
+  masterAvailability MasterAvailability[]
+  bookingLogs        BookingLog[]
+  branch             Branch?              @relation(name: "BranchUsers", fields: [branchId], references: [id], onDelete: SetNull)
+  branchId           String?
+  clients            Client[]
+  managedBranches    Branch[]             @relation(name: "AdminBranches")
+  createdBranches    Branch[]             @relation(name: "SuperAdminBranches")
+  resetToken         String?
+  resetTokenExpiry   DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  deletedAt          DateTime?
+}
+
+model Branch {
+  id           String    @id @default(uuid())
+  name         String
+  address      String?
+  phoneNumber  String?
+  description  String?
+  socialMedia  String?
+  city         String?
+  image        String?
+  status       String    @default("INACTIVE")
+  superAdmin   User      @relation(name: "SuperAdminBranches", fields: [superAdminId], references: [id], onDelete: Cascade)
+  superAdminId String
+  admin        User      @relation(name: "AdminBranches", fields: [adminId], references: [id], onDelete: Cascade)
+  adminId      String
+  users        User[]    @relation(name: "BranchUsers")
+  services     Service[]
+  bookings     Booking[]
+  reviews      Review[] // Відгуки про філію
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String
+  services  Service[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User?     @relation(fields: [userId], references: [id])
+  userId    String?
+}
+
+model Service {
+  id          String          @id @default(uuid())
+  name        String
+  description String
+  duration    Int
+  price       Float
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  bookings    Booking[]
+  currency    String          @default("UAH")
+  category    Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId  String
+  branch      Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branchId    String?
+  masters     ServiceMaster[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
+}
+
+model Client {
+  id          String    @id @default(cuid())
+  name        String
+  nickName    String
+  phoneNumber String?
+  chatId      String?   @unique
+  userId      String?   @unique
+  user        User?     @relation(fields: [userId], references: [id])
+  reviews     Review[]
+  bookings    Booking[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+}
+
+model Booking {
+  id        String           @id @default(uuid())
+  user      User             @relation(fields: [userId], references: [id])
+  userId    String
+  services  Service[] // Зв'язок з послугами
+  review    Review[]
+  client    Client           @relation(fields: [clientId], references: [id])
+  clientId  String
+  branch    Branch?          @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branchId  String?
+  date      DateTime
+  time      String
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  status    String           @default("PENDING")
+  logs      BookingLog[]
+  messages  BookingMessage[]
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  clientId  String?
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  bookingId String?
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MasterAvailability {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  availability String // Store JSON as a string
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model BookingLog {
+  id        String   @id @default(uuid())
+  bookingId String
+  userId    String
+  action    String // "confirmed" або "canceled"
+  timestamp DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ServiceMaster {
+  serviceId String
+  masterId  String
+  service   Service @relation(fields: [serviceId], references: [id])
+  master    User    @relation(fields: [masterId], references: [id])
+
+  @@id([serviceId, masterId])
+}
+
+model BookingMessage {
+  id        String   @id @default(uuid())
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId String
+  chatId    String
+  messageId Int
+  createdAt DateTime @default(now())
+}
