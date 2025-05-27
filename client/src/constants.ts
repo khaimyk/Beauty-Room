@@ -1,2 +1,4 @@
 export const BASE_URL =
-  process.env.NODE_ENV === "production" ? "/" : "http://localhost:8000"
+  import.meta.env.MODE === "production"
+    ? import.meta.env.VITE_BASE_URL
+    : "http://localhost:8000"

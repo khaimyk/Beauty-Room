@@ -1,0 +1,25 @@
+services:
+  server:
+    build:
+      context: ./server
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server/prisma:/app/prisma
+      - ./server/data:/app/data
+    networks:
+      - app-network
+
+  client:
+    build:
+      context: ./client
+    ports:
+      - "3000:80"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

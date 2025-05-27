@@ -5,10 +5,17 @@ const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 const cors = require("cors");
 require("dotenv").config();
-const errorHandler = require("../server/middleware/errorHandler");
+const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000", // для dev
+      "https://client-oosl.onrender.com", // ваш клієнт на Render
+    ],
+  })
+);
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
@@ -19,17 +26,14 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use("/image", express.static("image"));
 
-app.use("/api/user", require("../server/routes/users"));
-app.use("/api/service", require("../server/routes/services"));
-app.use("/api/category", require("../server/routes/categories"));
-app.use("/api/client", require("../server/routes/clients"));
-app.use("/api/booking", require("../server/routes/bookings"));
-app.use("/api/branch", require("../server/routes/branches"));
-app.use("/api/review", require("../server/routes/reviews"));
-app.use(
-  "/api/masterAvailability",
-  require("../server/routes/masterAvailability")
-);
+app.use("/api/user", require("./routes/users"));
+app.use("/api/service", require("./routes/services"));
+app.use("/api/category", require("./routes/categories"));
+app.use("/api/client", require("./routes/clients"));
+app.use("/api/booking", require("./routes/bookings"));
+app.use("/api/branch", require("./routes/branches"));
+app.use("/api/review", require("./routes/reviews"));
+app.use("/api/masterAvailability", require("./routes/masterAvailability"));
 app.get("/", (req, res) => {
   res.status(200).json({ message: "API працює! 🚀" });
 });

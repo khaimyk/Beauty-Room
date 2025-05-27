@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { prisma } = require("../prisma/prisma-client.js");
-const brypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { ERRORS } = require("../utils/constants.js");
 const Joi = require("joi");
@@ -41,7 +41,7 @@ const login = async (req, res) => {
     });
 
     const isPasswordCorrect =
-      user && (await brypt.compare(password, user.password));
+      user && (await bcrypt.compare(password, user.password));
 
     if (!user || !isPasswordCorrect) {
       return sendErrorResponse(res, 400, ERRORS.INVALID_EMAIL_OR_PASSWORD);
@@ -83,8 +83,8 @@ const register = async (req, res) => {
     if (registeredUser) {
       return res.status(400).json({ message: ERRORS.USER_ALREADY_EXISTS });
     }
-    const salt = await brypt.genSalt(10);
-    const hashedPassword = await brypt.hash(password, salt);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
     const role = email.includes("admin") ? "ADMIN" : "CLIENT";
     const user = await prisma.user.create({
       data: {
@@ -227,7 +227,7 @@ const edit = async (req, res) => {
       ...(phoneNumber && { phoneNumber }),
       ...(description && { description }),
       ...(password && {
-        password: await brypt.hash(password, await brypt.genSalt(10)),
+        password: await bcrypt.hash(password, await bcrypt.genSalt(10)),
       }),
       ...(branchId !== undefined && {
         branch: branchId ? { connect: { id: branchId } } : { disconnect: true },

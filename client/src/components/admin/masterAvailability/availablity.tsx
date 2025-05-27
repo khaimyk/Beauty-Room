@@ -46,6 +46,9 @@ export const MasterCalendar = ({ masterId }: { masterId: string }) => {
     },
     [],
   )
+  const sortDaysByDate = useCallback((days: typeof selectedDays) => {
+    return [...days].sort((a, b) => a.date.getTime() - b.date.getTime())
+  }, [])
 
   useEffect(() => {
     if (existingAvailability) {
@@ -61,6 +64,7 @@ export const MasterCalendar = ({ masterId }: { masterId: string }) => {
         }))
 
         setSelectedDays(sortedAvailability)
+        sortDaysByDate(sortedAvailability)
 
         if (availability.length > 0 && availability[0].slots?.length > 0) {
           setTimeSlotsTemplate(sortSlots(availability[0].slots))
@@ -70,7 +74,7 @@ export const MasterCalendar = ({ masterId }: { masterId: string }) => {
         toast.error("Помилка завантаження доступних дат")
       }
     }
-  }, [existingAvailability, sortSlots])
+  }, [existingAvailability, sortSlots, sortDaysByDate])
 
   const toggleDateSelection = (date: unknown) => {
     const parsedDate = new Date(date as string)
@@ -105,13 +109,26 @@ export const MasterCalendar = ({ masterId }: { masterId: string }) => {
 
   const handleAddSlot = (date: Date) => {
     setSelectedDays(prev =>
-      prev.map(item =>
-        item.date.toDateString() === date.toDateString()
-          ? {
-              ...item,
-              slots: sortSlots([...item.slots, { startTime: "09:00" }]),
-            }
-          : item,
+      sortDaysByDate(
+        prev.map(item => {
+          if (item.date.toDateString() !== date.toDateString()) return item
+
+          const lastSlot = item.slots[item.slots.length - 1]
+          let newTime = "09:00"
+
+          if (lastSlot) {
+            const [hour, minute] = lastSlot.startTime.split(":").map(Number)
+            const newHour = (hour + 1) % 24 // дозволяє цикл з 23 → 00 → 01 → ...
+            newTime = `${newHour.toString().padStart(2, "0")}:${minute
+              .toString()
+              .padStart(2, "0")}`
+          }
+
+          return {
+            ...item,
+            slots: sortSlots([...item.slots, { startTime: newTime }]),
+          }
+        }),
       ),
     )
   }
@@ -211,12 +228,14 @@ export const MasterCalendar = ({ masterId }: { masterId: string }) => {
 
   // Функція для отримання дат поточного місяця
   const getDaysForCurrentMonth = () => {
-    return selectedDays.filter(day => {
-      return (
-        day.date.getMonth() === currentMonth.getMonth() &&
-        day.date.getFullYear() === currentMonth.getFullYear()
-      )
-    })
+    return sortDaysByDate(
+      selectedDays.filter(day => {
+        return (
+          day.date.getMonth() === currentMonth.getMonth() &&
+          day.date.getFullYear() === currentMonth.getFullYear()
+        )
+      }),
+    )
   }
 
   return (

@@ -28,9 +28,10 @@ import { AllClients } from "./allUsersClients"
 
 interface RoleProps {
   filterRoles?: RoleType[]
+  title?: string
 }
 
-export const Role = ({ filterRoles }: RoleProps) => {
+export const Role = ({ filterRoles, title }: RoleProps) => {
   const [searchParams] = useSearchParams()
   const branchId = searchParams.get("branchId")
   const { data, isLoading, isError } = useGetAllUsersQuery(
